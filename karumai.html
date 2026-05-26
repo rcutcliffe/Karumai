@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Karumai Island Telephone Network</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0f10;--surface:#111619;--surface2:#171d1f;
+  --border:#1e2a2d;--border2:#253235;
+  --green:#00e5a0;--green-dim:#003d2a;
+  --amber:#f0a500;--amber-dim:#3a2800;
+  --blue:#4dc8ff;--blue-dim:#003650;
+  --red:#ff5560;--red-dim:#3a0a0c;
+  --purple:#b088ff;--orange:#ff8844;--teal:#44ddbb;--pink:#ff88cc;
+  --text:#c8d8d4;--text2:#6a8a84;--text3:#3a5050;
+  --mono:'Share Tech Mono',monospace;--ui:'Barlow',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:15px;min-height:100vh;overflow-x:hidden}
+.tab-bar{display:flex;border-bottom:1px solid var(--border2);background:var(--surface);position:sticky;top:0;z-index:100}
+.tab-btn{padding:0.7rem 1.4rem;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text2);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}.tab-btn.active{color:var(--green);border-bottom-color:var(--green)}
+.tab-pane{display:none;padding:1.5rem;max-width:1100px;margin:0 auto}.tab-pane.active{display:block}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:1rem}
+.ph{padding:0.45rem 0.9rem;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text2);display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.pb{padding:0.9rem}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--border2);display:inline-block;flex-shrink:0;transition:all 0.2s}
+.dot.g{background:var(--green);box-shadow:0 0 7px var(--green)}.dot.a{background:var(--amber);box-shadow:0 0 7px var(--amber)}
+.dot.r{background:var(--red);box-shadow:0 0 7px var(--red)}.dot.b{background:var(--blue);box-shadow:0 0 7px var(--blue)}
+.dot.o{background:var(--orange);box-shadow:0 0 7px var(--orange)}.dot.t{background:var(--teal);box-shadow:0 0 7px var(--teal)}
+#mapSvg{width:100%;height:520px;background:#060c0d;border-radius:3px;display:block}
+.map-legend{display:flex;gap:0.6rem;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap}
+.leg-item{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:2px;border:1px solid var(--border2)}
+.call-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem}
+@media(max-width:640px){.call-grid{grid-template-columns:1fr}}
+#dialDisplay{font-family:var(--mono);font-size:22px;letter-spacing:0.2em;color:var(--green);background:#060c0d;border:1px solid var(--border2);border-radius:3px;padding:0.55rem 0.9rem;min-height:50px;display:flex;align-items:center}
+.cursor{animation:blink 1s step-end infinite}@keyframes blink{50%{opacity:0}}
+.dial-row{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:210px}
+.dkey{background:var(--surface2);border:1px solid var(--border2);border-radius:3px;font-family:var(--mono);font-size:17px;color:var(--text);padding:0.45rem;cursor:pointer;text-align:center;transition:all 0.08s;user-select:none}
+.dkey:hover{border-color:var(--green);color:var(--green)}.dkey:active{transform:scale(0.93);background:var(--green-dim)}
+.btn{background:transparent;border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:0.07em;padding:0.42rem 0.9rem;cursor:pointer;text-transform:uppercase;transition:all 0.1s}
+.btn:hover{border-color:var(--green);color:var(--green)}.btn:active{transform:scale(0.97)}
+.btn.primary{border-color:var(--green);color:var(--green)}.btn.primary:hover{background:var(--green-dim)}
+.btn.danger{border-color:var(--red);color:var(--red)}.btn.danger:hover{background:var(--red-dim)}
+.btn:disabled{opacity:0.3;cursor:not-allowed;transform:none}
+canvas#scope{width:100%;height:96px;display:block;background:#060c0d;border-radius:2px}
+.freq-strip{display:grid;gap:2px;margin-top:5px}
+.fb-wrap{display:flex;flex-direction:column;align-items:center;gap:2px}
+.fb-lbl{font-family:var(--mono);font-size:7px;color:var(--text3)}
+.fb-outer{width:100%;height:22px;background:#060c0d;border:1px solid var(--border);border-radius:1px;overflow:hidden;position:relative}
+.fb-inner{position:absolute;bottom:0;left:0;right:0;height:0;transition:height 0.04s}
+#traceLog{font-family:var(--mono);font-size:11px;line-height:1.85;max-height:380px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.tl{display:flex;gap:0.6rem;padding:1px 0;opacity:0;animation:fi 0.12s forwards}@keyframes fi{to{opacity:1}}
+.tl-t{color:var(--text3);min-width:5rem;flex-shrink:0}
+.tl-d{min-width:5rem;font-weight:600;flex-shrink:0}
+.tl-d.fwd{color:var(--green)}.tl-d.bwd{color:var(--amber)}.tl-d.sys{color:var(--blue)}
+.tl-d.tone{color:var(--purple)}.tl-d.step{color:var(--orange)}.tl-d.jct{color:#88ccaa}
+.tl-d.dsr{color:#ffaa44}.tl-d.fin{color:#ff8888}.tl-d.err{color:var(--red)}
+.tl-d.xbar{color:var(--teal)}.tl-d.ans{color:var(--pink)}.tl-d.k{color:var(--blue)}
+.tl-d.mkt{color:#606868}.tl-d.gv{color:#88aaff}.tl-d.regi{color:#cc88ff}
+.tl-f{color:var(--text2);min-width:10rem;flex-shrink:0}.tl-m{color:var(--text)}
+.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.sig-box{background:#060c0d;border:1px solid var(--border);border-radius:2px;padding:0.45rem 0.6rem}
+.sb-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px}
+.sb-val{font-family:var(--mono);font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-val.f{color:var(--green)}.sb-val.b{color:var(--amber)}.sb-val.s{color:var(--orange)}.sb-val.x{color:var(--teal)}
+.exch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:0.75rem}
+.exch-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0.75rem}
+.ec-head{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem}
+.ec-code{font-family:var(--mono);font-size:13px;font-weight:600}
+.ec-name{font-family:var(--mono);font-size:10px;color:var(--text2)}
+.ec-type{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem}
+.route-row{display:grid;grid-template-columns:3rem 1fr 2.5rem;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:3px;gap:4px}
+.cct-bar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden}
+.cct-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.hist-row{display:grid;grid-template-columns:4.5rem 3.5rem 7rem 1fr 4rem 5rem;gap:0.4rem;padding:5px 0;border-bottom:1px solid var(--border);align-items:center;font-family:var(--mono);font-size:10px}
+.hist-head{color:var(--text2);font-size:9px;letter-spacing:0.07em;text-transform:uppercase;padding-bottom:5px;border-bottom:1px solid var(--border2)}
+.hist-result{font-size:9px;padding:2px 4px;border-radius:2px;text-align:center}
+.hr-ans{background:var(--green-dim);color:var(--green)}.hr-busy{background:var(--amber-dim);color:var(--amber)}
+.hr-cong{background:var(--red-dim);color:var(--red)}.hr-abort{background:var(--border);color:var(--text2)}
+.town-select{background:var(--surface2);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:var(--mono);font-size:11px;padding:0.38rem 0.55rem;outline:none;cursor:pointer}
+.town-select:focus{border-color:var(--green)}
+.num-display{font-family:var(--mono);font-size:12px;color:var(--amber)}
+.speed-row{display:flex;align-items:center;gap:0.75rem;font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:8px}
+.speed-row input[type=range]{flex:1;accent-color:var(--green)}
+</style>
+</head>
+<body>
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('map')">&#9632; Network Map</button>
+  <button class="tab-btn" onclick="showTab('call')">&#9742; Active Call</button>
+  <button class="tab-btn" onclick="showTab('status')">&#9644; Exchange Status</button>
+  <button class="tab-btn" onclick="showTab('history')">&#9776; Call History</button>
+</div>
+<div id="tab-map" class="tab-pane active">
+  <div class="panel">
+    <div class="ph"><span class="dot g"></span>karumai island — telephone network &nbsp;·&nbsp; click any exchange to place a call</div>
+    <div class="pb" style="padding-bottom:0.5rem">
+      <div class="map-legend">
+        <span class="leg-item" style="color:var(--green);border-color:var(--green)">ARK-D ~30 lines decadic</span>
+        <span class="leg-item" style="color:var(--blue);border-color:var(--blue)">ARK-M ~200 lines MFC-K</span>
+        <span class="leg-item" style="color:var(--amber);border-color:var(--amber)">ARF Reg-LP / tandem</span>
+        <span class="leg-item" style="color:var(--purple);border-color:var(--purple)">ARF Reg-LM</span>
+        <span class="leg-item" style="color:var(--orange);border-color:var(--orange)">Step / Strowger</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">— direct &nbsp;··· via PKT</span>
+      </div>
+      <svg id="mapSvg" viewBox="0 0 700 520"></svg>
+    </div>
+  </div>
+</div>
+<div id="tab-call" class="tab-pane">
+  <div class="call-grid">
+    <div>
+      <div class="panel">
+        <div class="ph"><span class="dot" id="callerDot"></span>originating exchange</div>
+        <div class="pb">
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <select class="town-select" id="fromExch" onchange="onFromChange()"><option value="">— select origin —</option></select>
+            <span id="fromNum" class="num-display"></span>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="dot" id="destDot"></span>destination number</div>
+        <div class="pb">
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+            <select class="town-select" id="toExch" onchange="onToChange()"><option value="">— select destination —</option></select>
+            <span id="toNum" class="num-display"></span>
+          </div>
+          <div id="dialDisplay"><span id="dialDigits"></span><span class="cursor">_</span></div>
+          <div style="margin-top:8px"><div class="dial-row" id="dialPad"></div></div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn primary" id="callBtn" onclick="startCall()">&#9654; CALL</button>
+            <button class="btn danger" id="hangBtn" onclick="hangUp()" disabled>&#9632; CLEAR</button>
+            <button class="btn" onclick="clearDial()">CLR</button>
+          </div>
+          <div class="speed-row">
+            <span>speed</span>
+            <input type="range" id="spd" min="0.5" max="5" step="0.5" value="1" oninput="updateSpeed()">
+            <span id="spdLbl" style="color:var(--amber);min-width:3.5rem">1.0×</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="ph"><span class="dot" id="scopeDot"></span>waveform</div>
+        <div class="pb" style="padding-bottom:0.5rem">
+          <canvas id="scope"></canvas>
+          <div class="freq-strip" id="freqStrip"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="dot" id="sigDot"></span>signals</div>
+        <div class="pb">
+          <div class="sig-row">
+            <div class="sig-box"><div class="sb-lbl">forward →</div><div class="sb-val" id="sfwd">—</div></div>
+            <div class="sig-box"><div class="sb-lbl">← backward</div><div class="sb-val" id="sbwd">—</div></div>
+          </div>
+          <div class="sig-row" style="margin-top:5px">
+            <div class="sig-box"><div class="sb-lbl">state</div><div class="sb-val" id="sstate" style="color:var(--blue)">idle</div></div>
+            <div class="sig-box"><div class="sb-lbl">route</div><div class="sb-val" id="sroute" style="color:var(--blue)">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><span class="dot" id="traceDot"></span>exchange dialogue &nbsp;<span id="traceStats" style="color:var(--text3);font-size:10px"></span></div>
+    <div class="pb" style="padding:0 0.9rem"><div id="traceLog"></div></div>
+  </div>
+</div>
+<div id="tab-status" class="tab-pane">
+  <div class="panel">
+    <div class="ph"><span class="dot a"></span>exchange and circuit status</div>
+    <div class="pb"><div class="exch-grid" id="exchGrid"></div></div>
+  </div>
+</div>
+<div id="tab-history" class="tab-pane">
+  <div class="panel">
+    <div class="ph"><span class="dot b"></span>call history</div>
+    <div class="pb">
+      <div class="hist-row hist-head"><span>time</span><span>from</span><span>to number</span><span>route</span><span>dur</span><span>result</span></div>
+      <div id="historyList"></div>
+      <div id="histEmpty" style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:1rem 0">no calls yet</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// NETWORK DATA
+// ═══════════════════════════════════════════════════════
+const EXCHANGES={
+  PKM:{name:'Port Karumai Main',  town:'Port Karumai',type:'ARK-D',     subLoop:'Decadic', trunkSig:'Decadic-to-parent',register:'none',    lines:30,  prefixes:['21','22','23'],color:'#00e5a0',x:530,y:110,marker:true,pktStrip:3},
+  PKS:{name:'Port Karumai South', town:'Port Karumai',type:'ARK-M',     subLoop:'Decadic', trunkSig:'MFC-K',            register:'Reg.ELP', lines:200, prefixes:['24','25'],     color:'#4dc8ff',x:530,y:195,marker:true},
+  PKT:{name:'Port Karumai Tandem',town:'Port Karumai',type:'ARF-tandem',subLoop:'none',    trunkSig:'MF',               register:'Reg-LP',  lines:0,   prefixes:[],              color:'#f0a500',x:440,y:150,marker:true},
+  STF:{name:'Stenfield',          town:'Stenfield',   type:'ARF Reg-LM',subLoop:'Decadic', trunkSig:'MF',               register:'Reg-LM',  lines:800, prefixes:['41','42','43'],color:'#b088ff',x:175,y:200,marker:true},
+  HAL:{name:'Halverton',          town:'Halverton',   type:'ARF Reg-LM',subLoop:'Decadic', trunkSig:'MF',               register:'Reg-LM',  lines:600, prefixes:['51','52'],     color:'#b088ff',x:240,y:330,marker:true},
+  DWK:{name:'Denwick',            town:'Denwick',     type:'ARF Reg-LP',subLoop:'Decadic', trunkSig:'MF',               register:'Reg-LP',  lines:400, prefixes:['61','62'],     color:'#f0a500',x:490,y:380,marker:true},
+  MRW:{name:'Murrawa',            town:'Murrawa',     type:'Step',      subLoop:'Decadic', trunkSig:'Decadic',          register:'Strowger',lines:200, prefixes:['71'],          color:'#ff8844',x:320,y:255,marker:false,
+       hasDSR:false,pktStrip:3,
+       localStages:['1st Group','2nd Group','3rd Group','4th Group','5th Group','Final(tens)','Final(units)'],
+       jctStages:['4th Group','5th Group','Final(tens)','Final(units)']},
+  COR:{name:'Cape Orris',         town:'Cape Orris',  type:'Step',      subLoop:'Decadic', trunkSig:'Decadic',          register:'Strowger',lines:30,  prefixes:['81'],          color:'#ff8844',x:120,y:85, marker:false,
+       hasDSR:true,pktStrip:3,
+       localStages:['DSR','1st Group','Final(tens)','Final(units)'],
+       jctStages:['DSR','1st Group','Final(tens)','Final(units)']},
+  TBK:{name:'Talbeck',            town:'Talbeck',     type:'ARF Reg-LP',subLoop:'Decadic', trunkSig:'MF',               register:'Reg-LP',  lines:200, prefixes:['91'],          color:'#f0a500',x:200,y:420,marker:true},
+};
+const ROUTES=[
+  {a:'PKM',b:'PKT',circuits:24,used:0},{a:'PKS',b:'PKT',circuits:12,used:0},
+  {a:'STF',b:'PKT',circuits:12,used:0},{a:'STF',b:'HAL',circuits:6,used:0},
+  {a:'HAL',b:'PKT',circuits:8,used:0},{a:'DWK',b:'PKT',circuits:6,used:0},
+  {a:'DWK',b:'TBK',circuits:4,used:0},{a:'TBK',b:'PKT',circuits:4,used:0},
+  {a:'MRW',b:'PKT',circuits:4,used:0},{a:'COR',b:'PKT',circuits:2,used:0},
+];
+const DIRECT_PAIRS=new Set(['STF-HAL','HAL-STF','DWK-TBK','TBK-DWK']);
+function getRoute(a,b){return ROUTES.find(r=>(r.a===a&&r.b===b)||(r.a===b&&r.b===a));}
+function buildPath(from,to){
+  if(from===to)return[from];
+  if(DIRECT_PAIRS.has(from+'-'+to))return[from,to];
+  return[from,'PKT',to];
+}
+function randomNum(code){
+  const ex=EXCHANGES[code];if(!ex||!ex.prefixes.length)return null;
+  const pfx=ex.prefixes[Math.floor(Math.random()*ex.prefixes.length)];
+  return pfx+String(10000+Math.floor(Math.random()*90000));
+}
+function exchForNumber(num){
+  if(!num||num.length<2)return null;
+  const pfx=num.substring(0,2);
+  return Object.keys(EXCHANGES).find(k=>EXCHANGES[k].prefixes.includes(pfx))||null;
+}
+
+// ═══════════════════════════════════════════════════════
+// AUDIO ENGINE
+// ═══════════════════════════════════════════════════════
+const AC=new(window.AudioContext||window.webkitAudioContext)();
+let activeOscs=[],activeNodes=[];
+function resumeAC(){if(AC.state==='suspended')AC.resume();}
+function playTones(freqs,vol,startT,dur,atk=0.008,rel=0.012){
+  if(!freqs||!freqs.length)return startT+dur+rel;
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0,startT);g.gain.linearRampToValueAtTime(vol/freqs.length,startT+atk);
+  g.gain.setValueAtTime(vol/freqs.length,startT+dur);g.gain.linearRampToValueAtTime(0,startT+dur+rel);
+  g.connect(AC.destination);
+  freqs.forEach(f=>{const o=AC.createOscillator();o.type='sine';o.frequency.value=f;o.connect(g);o.start(startT);o.stop(startT+dur+rel+0.02);activeOscs.push(o);});
+  activeNodes.push(g);return startT+dur+rel;
+}
+function stopAll(){activeOscs.forEach(o=>{try{o.stop(0)}catch(e){}});activeOscs=[];activeNodes=[];}
+function noiseBurst(t,dur,filterHz,filterType,Q,vol,decay){
+  try{
+    const len=Math.max(1,Math.ceil(AC.sampleRate*dur));
+    const buf=AC.createBuffer(1,len,AC.sampleRate);const d=buf.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*decay));
+    const src=AC.createBufferSource();src.buffer=buf;
+    const flt=AC.createBiquadFilter();flt.type=filterType||'bandpass';flt.frequency.value=filterHz;flt.Q.value=Q||1.2;
+    const g=AC.createGain();g.gain.value=vol;
+    src.connect(flt);flt.connect(g);g.connect(AC.destination);
+    src.start(t);src.stop(t+dur+0.01);activeOscs.push(src);activeNodes.push(g,flt);
+  }catch(e){}
+}
+function strowgerClick(t,v=0.40){noiseBurst(t,0.020,1100,'bandpass',0.9,v,0.003);noiseBurst(t,0.028,280,'lowpass',2.0,v*0.55,0.007);noiseBurst(t+0.004,0.012,4000,'highpass',0.7,v*0.3,0.002);}
+function finalClick(t,v=0.22){noiseBurst(t,0.014,900,'bandpass',1.0,v,0.003);noiseBurst(t,0.018,200,'lowpass',2.0,v*0.4,0.005);}
+function dsrClick(t,v=0.28){noiseBurst(t,0.016,1400,'bandpass',1.2,v,0.004);noiseBurst(t,0.022,350,'lowpass',1.5,v*0.45,0.006);noiseBurst(t+0.003,0.010,5000,'highpass',0.8,v*0.2,0.002);}
+function strowgerHunt(t,steps,v=0.18){for(let i=0;i<steps;i++){noiseBurst(t+i*0.038,0.014,800,'bandpass',1.0,v,0.005);noiseBurst(t+i*0.038+0.004,0.008,3500,'highpass',0.8,v*0.3,0.002);}}
+function xbarReed(t,v=0.10){noiseBurst(t,0.007,3200,'bandpass',1.5,v,0.0015);noiseBurst(t,0.009,700,'lowpass',1.0,v*0.25,0.003);noiseBurst(t+0.002,0.005,5500,'highpass',1.0,v*0.15,0.001);}
+function junctionClick(t,v=0.18){noiseBurst(t,0.012,600,'bandpass',1.0,v,0.004);noiseBurst(t,0.016,150,'lowpass',1.5,v*0.4,0.006);}
+function reedClick(t,v=0.12){noiseBurst(t,0.007,3200,'bandpass',1.5,v,0.0015);noiseBurst(t,0.009,700,'lowpass',1.0,v*0.25,0.003);}
+
+// MFC-M frequencies (HXF003)
+const MF_FWD={
+  '1':[1380,1500],'2':[1380,1620],'3':[1500,1620],'4':[1380,1740],
+  '5':[1500,1740],'6':[1620,1740],'7':[1380,1860],'8':[1500,1860],
+  '9':[1620,1860],'0':[1740,1860],
+  'CLASS':[1380,1620],
+  'G6_11':[1380,1980],
+  'G7_11':[1380,1980],
+  'G7_12':[1500,1980],
+};
+const BWD={
+  '1A1':[1140,1020],'1A2':[1140,900],'1A3':[1020,900],
+  '1A4':[1140,780],'1A5':[1020,780],'1A6':[900,780],
+  '1A7':[1140,660],'1A8':[1020,660],'1A9':[900,660],
+  '2A2':[1140,900],
+  '2A7':[1140,660],
+  '3A1':[1140,1020],
+  '3A3':[1020,900],
+  '3A4':[1140,780],
+  '3A7':[1140,660],
+  '1B1':[1140,1020],'1B2':[1140,900],'1B3':[1020,900],'1B4':[1140,780],
+};
+const BWD_DESC={
+  '1A1':'1A1 — next digit (GV)','1A2':'1A2 — restart','1A3':'1A3 — end of sel.',
+  '1A6':'1A6 — 6-digit crossbar',
+  '1A7':'1A7 — 7-digit / tandem route',
+  '1A8':'1A8 — 6-digit SxS',
+  '1A9':'1A9 — ARK-D route (all digits decadic)',
+  '2A2':'2A2 — restart (tandem switch)',
+  '2A7':'2A7 — waiting place, next digit',
+  '3A1':'3A1 — next digit (GIV/SL)',
+  '3A3':'3A3 — end of selection (SL)',
+  '3A4':'3A4 — start decadic from 1st digit',
+  '3A7':'3A7 — start decadic from 4th digit',
+  '1B1':'1B1 — subscriber idle','1B2':'1B2 — subscriber busy',
+  '1B3':'1B3 — congestion','1B4':'1B4 — congestion',
+};
+const MFCK_BWD={
+  'K1':[1140,1020],'U1':[1140,1020],'U2':[1140,900],'U3':[1020,900],
+  'U4':[1140,780],'U5':[1020,780],
+  'B1':[1140,1020],'B2':[1140,900],
+};
+
+function playDialTone(exchType,dur){
+  const t=AC.currentTime;
+  if(exchType==='Step'){
+    const g=AC.createGain();g.gain.value=0.14;g.connect(AC.destination);
+    const o=AC.createOscillator();o.type='sine';o.frequency.value=400;
+    const lfo=AC.createOscillator();lfo.type='sine';lfo.frequency.value=4;
+    const lfoG=AC.createGain();lfoG.gain.value=3;
+    lfo.connect(lfoG);lfoG.connect(o.frequency);
+    o.connect(g);o.start(t);o.stop(t+dur);lfo.start(t);lfo.stop(t+dur);
+    activeOscs.push(o,lfo);activeNodes.push(g,lfoG);
+  }else if(exchType==='ARK-M'){
+    playTones([400,450],0.15,t,dur,0.01,0.01);
+  }else{
+    playTones([400],0.15,t,dur,0.01,0.01);
+  }
+}
+function playRingback(n){let t=AC.currentTime;for(let i=0;i<n;i++){playTones([400],0.12,t,0.4,0.005,0.005);t+=0.6;playTones([400],0.12,t,0.4,0.005,0.005);t+=2.6;}}
+function playBusy(n){let t=AC.currentTime;for(let i=0;i<n*2;i++){playTones([425],0.14,t,0.375,0.004,0.004);t+=0.75;}}
+function playCongestion(n){let t=AC.currentTime;for(let i=0;i<n*8;i++){playTones([425],0.14,t,0.1,0.003,0.003);t+=0.2;}}
+
+// ═══════════════════════════════════════════════════════
+// OSCILLOSCOPE
+// ═══════════════════════════════════════════════════════
+const scopeCV=document.getElementById('scope');const scopeCX=scopeCV.getContext('2d');
+let scopeFreqs=[],scopeAnim=null;
+const STRIP_FREQS=[540,660,780,900,1020,1140,1209,1336,1380,1500,1620,1740,1860,1980];
+const MF_FWD_SET=new Set([1380,1500,1620,1740,1860,1980]);
+const MF_BWD_SET=new Set([540,660,780,900,1020,1140]);
+function buildFreqStrip(){
+  const s=document.getElementById('freqStrip');s.style.gridTemplateColumns=`repeat(${STRIP_FREQS.length},1fr)`;s.innerHTML='';
+  STRIP_FREQS.forEach(f=>{
+    const w=document.createElement('div');w.className='fb-wrap';
+    const lbl=document.createElement('div');lbl.className='fb-lbl';lbl.textContent=f;
+    const out=document.createElement('div');out.className='fb-outer';
+    const inn=document.createElement('div');inn.className='fb-inner';inn.id='fb'+f;
+    out.appendChild(inn);w.appendChild(out);w.appendChild(lbl);s.appendChild(w);
+  });
+}
+function setFreqs(freqs){
+  scopeFreqs=freqs||[];
+  STRIP_FREQS.forEach(f=>{
+    const el=document.getElementById('fb'+f);if(!el)return;
+    if((freqs||[]).includes(f)){el.style.height='100%';el.style.background=MF_FWD_SET.has(f)?'var(--green)':MF_BWD_SET.has(f)?'var(--amber)':'var(--blue)';}
+    else el.style.height='0';
+  });
+}
+function resizeScope(){scopeCV.width=scopeCV.offsetWidth||600;scopeCV.height=scopeCV.offsetHeight||96;}
+resizeScope();window.addEventListener('resize',resizeScope);
+function drawScope(){
+  const w=scopeCV.width,h=scopeCV.height;
+  scopeCX.fillStyle='#060c0d';scopeCX.fillRect(0,0,w,h);
+  scopeCX.strokeStyle='#141e20';scopeCX.lineWidth=0.5;
+  for(let x=0;x<w;x+=40){scopeCX.beginPath();scopeCX.moveTo(x,0);scopeCX.lineTo(x,h);scopeCX.stroke();}
+  for(let y=0;y<h;y+=20){scopeCX.beginPath();scopeCX.moveTo(0,y);scopeCX.lineTo(w,y);scopeCX.stroke();}
+  if(!scopeFreqs.length){
+    scopeCX.strokeStyle='#1e3030';scopeCX.lineWidth=1;scopeCX.beginPath();scopeCX.moveTo(0,h/2);scopeCX.lineTo(w,h/2);scopeCX.stroke();
+  }else{
+    const t=AC.currentTime,amp=(h*0.34)/scopeFreqs.length;
+    scopeFreqs.forEach(freq=>{
+      const col=MF_FWD_SET.has(freq)?'rgba(0,229,160,0.7)':MF_BWD_SET.has(freq)?'rgba(240,165,0,0.7)':'rgba(77,200,255,0.7)';
+      scopeCX.strokeStyle=col;scopeCX.lineWidth=1.5;scopeCX.beginPath();
+      for(let px=0;px<w;px++){const y=h/2+amp*Math.sin(2*Math.PI*freq*(t+px/w*0.018));px===0?scopeCX.moveTo(px,y):scopeCX.lineTo(px,y);}
+      scopeCX.stroke();
+    });
+    if(scopeFreqs.length>1){
+      const ca=amp*1.1;scopeCX.strokeStyle='rgba(255,255,255,0.18)';scopeCX.lineWidth=1;scopeCX.beginPath();
+      for(let px=0;px<w;px++){let y=0;scopeFreqs.forEach(f=>{y+=Math.sin(2*Math.PI*f*(t+px/w*0.018));});y=h/2+ca*y/scopeFreqs.length;px===0?scopeCX.moveTo(px,y):scopeCX.lineTo(px,y);}
+      scopeCX.stroke();
+    }
+  }
+  scopeAnim=requestAnimationFrame(drawScope);
+}
+function startScope(f){setFreqs(f);if(!scopeAnim)drawScope();}
+function stopScope(){if(scopeAnim){cancelAnimationFrame(scopeAnim);scopeAnim=null;}setFreqs([]);drawScope();}
+
+// ═══════════════════════════════════════════════════════
+// CALL ENGINE STATE
+// ═══════════════════════════════════════════════════════
+let callActive=false,stopFlag=false,callStart=0,sigCount=0,speedMul=1;
+let fromCode='',toDigits='',toCode='';
+const callHistory=[];
+const Sms=ms=>Math.round(ms/speedMul);
+function sleep(ms){return new Promise(r=>setTimeout(r,Sms(ms)));}
+
+let traceTotal=0;
+function trace(dir,freqs,msg,cls){
+  traceTotal++;sigCount++;
+  const ts=document.getElementById('traceStats');
+  if(ts)ts.textContent=`  sigs:${sigCount}  t:+${((Date.now()-callStart)/1000).toFixed(2)}s`;
+  const log=document.getElementById('traceLog');
+  if(traceTotal>450&&log.firstChild)log.removeChild(log.firstChild);
+  const row=document.createElement('div');row.className='tl';
+  const el=((Date.now()-callStart)/1000).toFixed(3);
+  const fStr=Array.isArray(freqs)&&freqs.length?freqs.join('+'):'';
+  row.innerHTML=`<span class="tl-t">+${el}s</span><span class="tl-d ${cls||'sys'}">${dir}</span><span class="tl-f">${fStr}</span><span class="tl-m">${msg}</span>`;
+  log.appendChild(row);log.scrollTop=log.scrollHeight;
+  if(freqs&&freqs.length)startScope(freqs);
+}
+function setSig(id,val,cls){const el=document.getElementById(id);if(el){el.textContent=val||'—';el.className='sb-val '+(cls||'');}}
+function setDot(id,cls){const el=document.getElementById(id);if(el)el.className='dot '+(cls||'');}
+function clearTrace(){
+  document.getElementById('traceLog').innerHTML='';
+  const ts=document.getElementById('traceStats');if(ts)ts.textContent='';
+  sigCount=0;traceTotal=0;
+  setSig('sfwd','','');setSig('sbwd','','');setSig('sstate','idle','');setSig('sroute','','');
+  stopScope();
+}
+
+// ─────────────────────────────────────────────────────
+// MARKER DELAY (ARF/ARK common control)
+// ─────────────────────────────────────────────────────
+async function markerDelay(label){
+  const ms=80+Math.floor(Math.random()*120);
+  trace('MKT',[],'[marker attending...]  '+label,'mkt');
+  await sleep(ms);
+}
+
+// ─────────────────────────────────────────────────────
+// MFC-M PRIMITIVES
+// ─────────────────────────────────────────────────────
+const SIG=110,ACK=80,GAP=30;
+
+async function mfSend(digit,origLabel,desc){
+  if(stopFlag)return;
+  const freqs=MF_FWD[digit];if(!freqs)return;
+  const label=desc||`digit ${digit}`;
+  trace('FWD →',freqs,`${origLabel}: ${label}`,'fwd');
+  setSig('sfwd',label,'f');
+  playTones(freqs,0.18,AC.currentTime,Sms(SIG)/1000,0.007,0.008);
+  startScope(freqs);await sleep(SIG+GAP);
+}
+async function mfRecv(code,srcLabel){
+  if(stopFlag)return;
+  const freqs=BWD[code];if(!freqs)return;
+  const desc=BWD_DESC[code]||code;
+  trace('← BWD',freqs,`${srcLabel}: ${desc}`,'bwd');
+  setSig('sbwd',desc,'b');
+  playTones(freqs,0.15,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+  startScope(freqs);await sleep(ACK+GAP);
+}
+
+// ─────────────────────────────────────────────────────
+// MFC-M SINGLE CONTINUOUS DIGIT STREAM
+// ─────────────────────────────────────────────────────
+// decTermAllDigits: when true, after digit 2 the GV signals 1A9 (special ARK-D
+// routing), register re-applies digit 2, GV returns 3A4 (start decadic from
+// 1st digit), then mfStream returns.  The caller (runArkDTerm) then outpulses
+// ALL 7 digits decadically on the ARK-D junction so PKM Reg-D can receive them.
+async function mfStream(origLabel, digits, regType, bCode, isLocal, viaTandem, destCode, decTermAllDigits=false, destIsStep=false){
+  if(stopFlag)return;
+  const destEx=EXCHANGES[destCode]||{};
+  const fromEx=EXCHANGES[fromCode]||{};
+
+  const gvLabel = isLocal ? `${fromCode} GV` : viaTandem ? 'PKT GV' : destCode+' GV';
+  const givLabel = isLocal ? `${fromCode} GIV` : destCode+' GIV';
+  const slLabel  = isLocal ? `${fromCode} SL`  : destCode+' SL';
+
+  trace('SYS',[],`seizure: ${origLabel} seizes trunk  +  digit ${digits[0]} sent simultaneously`,'sys');
+  await sleep(50);
+
+  await mfSend(digits[0], origLabel, `Group I — digit ${digits[0]}`);
+  if(stopFlag)return;
+
+  await mfRecv('1A1', gvLabel);
+  if(stopFlag)return;
+
+  await mfSend(digits[1], origLabel, `Group I — digit ${digits[1]}`);
+  if(stopFlag)return;
+
+  let inRestartedStream=false;
+  let waitingPlaceDone=false;
+
+  if(isLocal){
+    trace('GV',[],`${gvLabel}: prefix ${digits[0]}${digits[1]} = local — switching to GIV`,'gv');
+    await markerDelay(gvLabel+' switching');
+    if(stopFlag)return;
+    await markerDelay(givLabel);
+    if(stopFlag)return;
+  }else if(viaTandem){
+    trace('GV',[],`${gvLabel}: prefix ${digits[0]}${digits[1]} → routing via PKT tandem`,'gv');
+    await markerDelay(gvLabel);
+    if(stopFlag)return;
+    await mfRecv('1A7', gvLabel);
+    if(stopFlag)return;
+    await mfSend(digits[1], origLabel, `re-apply digit ${digits[1]} (ack 1A7)`);
+    if(stopFlag)return;
+    await mfRecv('2A2', gvLabel);
+    if(stopFlag)return;
+    trace('GV',[],`${gvLabel}: 2A2 — GV switched to tandem path; register restarts from digit 1`,'gv');
+    await sleep(60);
+    inRestartedStream=true;
+    await mfSend(digits[0], origLabel, `restart — digit ${digits[0]}`);
+    if(stopFlag)return;
+    await mfRecv('3A1', 'PKT GV (tandem)');
+    if(stopFlag)return;
+    await mfSend(digits[1], origLabel, `restart — digit ${digits[1]}`);
+    if(stopFlag)return;
+    trace('GV',[],'PKT GV (tandem): prefix confirmed — switching toward '+destCode,'gv');
+    await markerDelay('PKT GV switching');
+    if(stopFlag)return;
+    if(destIsStep){
+      // Step destination: PKT GV signals 1A9 (7-digit, switch to 3A series),
+      // register re-applies digit 2 to acknowledge, GV returns 3A7
+      // (start decadic from 4th digit position) — runStepTerm outpulses 4 digits.
+      await mfRecv('1A9', 'PKT GV (tandem) [1A9 — 7-digit Step dest]');
+      if(stopFlag)return;
+      await mfSend(digits[1], origLabel, `re-apply digit ${digits[1]} (ack 1A9)`);
+      if(stopFlag)return;
+      await mfRecv('3A7', 'PKT GV (tandem) [3A7 — start decadic from 4th digit]');
+      if(stopFlag)return;
+      trace('SYS',[],'PKT GV: 3A7 — register switches to decadic outpulsing, 4 digits on Step junction','sys');
+      return;
+    }
+    // PKT GV has switched toward dest — 3A1 returned to register: send thousands digit
+    await mfRecv('3A1', 'PKT GV (tandem) → '+destCode+' GIV [send thousands]');
+    if(stopFlag)return;
+  }else{
+    trace('GV',[],`${gvLabel}: prefix ${digits[0]}${digits[1]} → routing directly to ${destCode}`,'gv');
+    await markerDelay(gvLabel+' switching');
+    if(stopFlag)return;
+    if(destIsStep){
+      await mfRecv('1A9', gvLabel+' [1A9 — 7-digit Step dest]');
+      if(stopFlag)return;
+      await mfSend(digits[1], origLabel, `re-apply digit ${digits[1]} (ack 1A9)`);
+      if(stopFlag)return;
+      await mfRecv('3A7', gvLabel+' [3A7 — start decadic from 4th digit]');
+      if(stopFlag)return;
+      trace('SYS',[],'GV: 3A7 — register switches to decadic outpulsing, 4 digits on Step junction','sys');
+      return;
+    }
+  }
+
+  // ARK-D destination: GV signals 1A9 (ARK-D special route) after digit 2,
+  // register re-applies digit 2 to acknowledge, GV returns 3A4 (start decadic
+  // from 1st digit) — mfStream then returns and caller outpulses all 7 digits.
+  if(decTermAllDigits&&!isLocal){
+    await mfRecv('1A9', gvLabel+' [ARK-D route — start decadic all digits]');
+    if(stopFlag)return;
+    await mfSend(digits[1], origLabel, `re-apply digit ${digits[1]} (ack 1A9)`);
+    if(stopFlag)return;
+    await mfRecv('3A4', gvLabel+' [3A4 — start decadic from 1st digit]');
+    if(stopFlag)return;
+    trace('SYS',[],'PKT register: 3A4 received — switching to decadic outpulsing, all 7 digits → PKM Reg-D','sys');
+    return;
+  }
+
+  if(!isLocal&&!inRestartedStream){
+    await mfRecv('1A1', gvLabel+' (routed → '+destCode+' GIV)');
+    if(stopFlag)return;
+  }
+
+  for(let i=2;i<digits.length;i++){
+    if(stopFlag)return;
+    const d=digits[i];
+    const isLast=(i===digits.length-1);
+
+    await mfSend(d, origLabel, `Group I — digit ${d}`);
+    if(stopFlag)return;
+
+    if(isLast){
+      await mfRecv('3A3', slLabel+' [end of selection]');
+      if(stopFlag)return;
+      await mfSend('CLASS', origLabel, 'Group 2 — signal 2: call from subscriber');
+      if(stopFlag)return;
+      await mfRecv(bCode||'1B1', slLabel);
+      if(stopFlag)return;
+      return;
+    }else if(i===2){
+      await markerDelay(givLabel);
+      if(stopFlag)return;
+      await mfRecv('3A1', givLabel+' [thousands group selected]');
+      if(stopFlag)return;
+
+      if(regType==='Reg-LM'&&!waitingPlaceDone&&!inRestartedStream){
+        await mfRecv('2A7', givLabel+' [waiting place — Reg-LM holds; subscriber completes dialling]');
+        if(stopFlag)return;
+        trace('SYS',[],'Reg-LM: 2A7 waiting place — register re-calls code sender after subscriber finishes','sys');
+        await sleep(120);
+        waitingPlaceDone=true;
+        if(stopFlag)return;
+      }
+    }else{
+      await mfRecv('3A1', slLabel);
+      if(stopFlag)return;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// PKT REG-I: decadic junction → MFC-M conversion
+// Called after Step exchange outpulses digits decadically on junction to PKT.
+// REG-I stores all digits then re-originates as MFC-M into PKT GV.
+// ─────────────────────────────────────────────────────
+async function runStepRegI(digits, stepCode, bCode, destCode, destIsStep){
+  if(stopFlag)return;
+  const ex=EXCHANGES[stepCode];
+  trace('REG-I',[],`PKT REG-I: junction from ${stepCode} complete — ${digits.length} digits stored`,'regi');
+  await sleep(80);if(stopFlag)return;
+  trace('REG-I',[],'PKT REG-I: converting decadic store to MFC-M — seizing PKT GV code sender','regi');
+  await markerDelay('PKT REG-I → GV');
+  if(stopFlag)return;
+
+  const origLabel=`PKT REG-I(via ${stepCode})`;
+  const path=buildPath(stepCode,destCode);
+  const viaTandem=(path.length===3&&path[1]==='PKT');
+  const destEx=EXCHANGES[destCode]||{};
+  const destIsStepEx=(destEx.type==='Step');
+
+  if(destIsStepEx){
+    // Destination is also Step: MFC-M terminates at 3A4 at PKT GV, then decadic on dest junction
+    trace('SYS',[],`${destCode} is Step — MFC-M terminates at 3A4; PKT outpulses decadic on ${destCode} junction`,'sys');
+    await mfStream(origLabel, digits, 'Reg-LP', '1B1', false, false, destCode, false, true);
+    if(stopFlag)return;
+    await runStepTerm(digits, destCode);
+  }else if(destEx.type==='ARK-D'){
+    // Destination is ARK-D: GV signals 1A9+3A4, then all 7 digits decadic to PKM Reg-D
+    trace('SYS',[],`${destCode} is ARK-D — GV signals 1A9+3A4; PKT outpulses all digits to ${destCode} Reg-D`,'sys');
+    await mfStream(origLabel, digits, 'Reg-LP', bCode, false, viaTandem, destCode, true);
+    if(stopFlag)return;
+    await runArkDTerm(digits, destCode);
+  }else{
+    // Destination is ARF/ARK-M: full MFC-M stream through to dest
+    await mfStream(origLabel, digits, 'Reg-LP', bCode, false, viaTandem, destCode);
+    if(stopFlag)return;
+    await xbarSwitchIncoming(digits.slice(3), destCode);
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// ARF CROSSBAR INTERNAL SWITCHING — AUDIO
+// ─────────────────────────────────────────────────────
+async function xbarSwitchLocal(digits,exchCode){
+  if(stopFlag)return;
+  const ex=EXCHANGES[exchCode];if(!ex)return;
+  trace('XBAR',[],`${exchCode} GV — analysing prefix ${digits[0]}${digits[1]}`,'xbar');
+  setSig('sfwd','GV prefix','x');xbarReed(AC.currentTime,0.11);await sleep(70);if(stopFlag)return;
+  trace('XBAR',[],`${exchCode} GIV — thousands digit ${digits[2]}`,'xbar');
+  setSig('sfwd',`GIV [${digits[2]}xxx]`,'x');xbarReed(AC.currentTime,0.11);xbarReed(AC.currentTime+0.014,0.08);
+  startScope([900]);await sleep(90);if(stopFlag)return;
+  const sl=digits.slice(3);
+  trace('XBAR',[],`${exchCode} SL — ${sl.join('')} → line seized`,'xbar');
+  setSig('sfwd',`SL [${sl.join('')}]`,'x');
+  let t=AC.currentTime;sl.forEach((d,i)=>{xbarReed(t+i*0.020,Math.max(0.04,0.09-i*0.015));});
+  startScope([1200]);await sleep(sl.length*20+70);if(stopFlag)return;
+  trace('XBAR',[],'line ring applied','xbar');setSig('sfwd','line ring','x');xbarReed(AC.currentTime,0.07);await sleep(55);
+}
+async function xbarSwitchIncoming(digits,exchCode){
+  if(stopFlag)return;
+  trace('XBAR',[],`${exchCode} GIV — thousands ${digits[0]} (incoming)`,'xbar');
+  setSig('sfwd',`GIV [${digits[0]}xxx]`,'x');xbarReed(AC.currentTime,0.11);xbarReed(AC.currentTime+0.014,0.08);
+  startScope([900]);await sleep(90);if(stopFlag)return;
+  const sl=digits.slice(1);
+  trace('XBAR',[],`${exchCode} SL — ${sl.join('')} → line seized`,'xbar');
+  setSig('sfwd',`SL [${sl.join('')}]`,'x');
+  let t=AC.currentTime;sl.forEach((d,i)=>{xbarReed(t+i*0.020,Math.max(0.04,0.09-i*0.015));});
+  startScope([1200]);await sleep(sl.length*20+70);if(stopFlag)return;
+  trace('XBAR',[],'line ring applied','xbar');setSig('sfwd','line ring','x');xbarReed(AC.currentTime,0.07);await sleep(55);
+}
+async function arkdLocalSL(digits,exchCode){
+  if(stopFlag)return;
+  trace('XBAR',[],`${exchCode} SL — ARK-D single-stage: ${digits.join('')} → line seized`,'xbar');
+  setSig('sfwd','ARK-D SL','x');
+  let t=AC.currentTime;digits.forEach((d,i)=>{xbarReed(t+i*0.018,Math.max(0.04,0.09-i*0.018));});
+  startScope([1100]);await sleep(digits.length*18+55);if(stopFlag)return;
+  trace('XBAR',[],'ARK-D line seized','xbar');xbarReed(AC.currentTime,0.06);await sleep(45);
+}
+
+// ─────────────────────────────────────────────────────
+// ARK-D TERMINATION: decadic outpulsing on PKM junction
+// Called after mfStream returns on 3A4 (1A9 sequence).
+// PKT register outpulses ALL 7 digits decadically on the PKM junction.
+// PKM Reg-D receives all digits, extracts tens+units internally,
+// passes them to marker M which tests and connects the subscriber line.
+// ─────────────────────────────────────────────────────
+async function runArkDTerm(allDigits, code){
+  if(stopFlag)return;
+  const ex=EXCHANGES[code];if(!ex)return;
+  trace('SYS',[],`PKT register: outpulsing all ${allDigits.length} digits decadic on ${code} junction → PKM Reg-D`,'sys');
+  // All 7 digits outpulsed — PKM Reg-D stores them all
+  for(let i=0;i<allDigits.length;i++){
+    if(stopFlag)return;
+    const d=allDigits[i];const n=d==='0'?10:parseInt(d);
+    trace('JCT',[],`PKT→${code} junction: digit ${d} (${n} pulses) [${i===0?'area':i<3?'prefix':'subscriber'} digit]`,'jct');
+    setSig('sfwd',`${code} jct [${d}]`,'s');
+    let t=AC.currentTime;
+    for(let p=0;p<n;p++){playTones([2100],0.05,t,0.066,0.003,0.003);junctionClick(t+0.003,0.18);t+=0.1;}
+    startScope([2100]);await sleep(n*100+55);if(stopFlag)return;
+  }
+  // PKM Reg-D has all digits — transfers tens+units to marker M
+  trace('REG-I',[],`${code} Reg-D: all digits received — extracting tens+units (${allDigits[5]}${allDigits[6]}) → marker M`,'regi');
+  await sleep(80);if(stopFlag)return;
+  await markerDelay(code+' marker M');if(stopFlag)return;
+  // Marker M tests and connects subscriber line via ARK-D SL
+  trace('XBAR',[],`${code} marker M + SL — connecting line ${allDigits[5]}${allDigits[6]}`,'xbar');
+  setSig('sfwd',`${code} SL [${allDigits[5]}${allDigits[6]}]`,'x');
+  let t=AC.currentTime;
+  [allDigits[5],allDigits[6]].forEach((d,i)=>{xbarReed(t+i*0.018,Math.max(0.05,0.09-i*0.018));});
+  startScope([1100]);await sleep(2*18+55);if(stopFlag)return;
+  trace('XBAR',[],`${code} line seized — M sets FDR; M and Reg-D release`,'xbar');
+  xbarReed(AC.currentTime,0.06);await sleep(45);
+}
+
+// ─────────────────────────────────────────────────────
+// ARK-D & ARK-M SIGNALLING
+// ─────────────────────────────────────────────────────
+async function runArkDOffhook(){
+  trace('SYS',[],'ARK-D: off-hook — circuit seized to parent PKT immediately','sys');
+  await sleep(120);if(stopFlag)return;
+  trace('SYS',[],'PKT Reg.ELP: connected — providing dial tone to ARK-D subscriber','sys');
+}
+async function runArkMOffhook(){
+  trace('SYS',[],'ARK-M: off-hook — KMR connected to FUR; circuit to Reg.ELP at PKT','sys');
+  await sleep(150);if(stopFlag)return;
+  await markerDelay('PKT Reg.ELP');if(stopFlag)return;
+  trace('FWD →',MF_FWD['G6_11'],'PKT KS: Group 6 signal 11 — request ARK-M subscriber category','fwd');
+  setSig('sfwd','G6-11 req.cat','f');
+  playTones(MF_FWD['G6_11'],0.16,AC.currentTime,Sms(SIG)/1000,0.007,0.008);
+  startScope(MF_FWD['G6_11']);await sleep(SIG+GAP);if(stopFlag)return;
+  trace('← BWD',MFCK_BWD['K1'],'ARK-M KMR: K1 — subscriber unrestricted','k');
+  setSig('sbwd','K1 sub unrestricted','b');
+  playTones(MFCK_BWD['K1'],0.14,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+  await sleep(ACK+GAP);if(stopFlag)return;
+  trace('SYS',[],'KMR + KS release — dial tone returned','sys');setSig('sfwd','','');setSig('sbwd','','');await sleep(80);
+}
+async function runArkMLocal(digits,bCode){
+  if(stopFlag)return;
+  const isIdle=(bCode==='1B1'||bCode==='B1');
+  trace('SYS',[],'PKT Reg.ELP → KS: sending digits to ARK-M KMR via MFC-K','sys');
+  await markerDelay('PKT KS');if(stopFlag)return;
+  for(let i=0;i<digits.length;i++){
+    if(stopFlag)return;
+    const d=digits[i];const isLast=(i===digits.length-1);
+    const freqs=MF_FWD[d];if(!freqs)continue;
+    trace('FWD →',freqs,`PKT KS → ARK-M KMR: digit ${d}`,'fwd');
+    setSig('sfwd',`KS digit ${d}`,'f');playTones(freqs,0.17,AC.currentTime,Sms(SIG)/1000,0.007,0.008);
+    startScope(freqs);await sleep(SIG+GAP);if(stopFlag)return;
+    const rCode=isLast?'U3':'U1';const rF=MFCK_BWD[rCode];
+    trace('← BWD',rF,`ARK-M KMR: ${rCode==='U3'?'U3 end of sel → B series':'U1 next digit'}`,'k');
+    setSig('sbwd',rCode==='U3'?'U3 end of sel':'U1 next','b');playTones(rF,0.14,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+    await sleep(ACK+GAP);if(stopFlag)return;
+  }
+  trace('FWD →',MF_FWD['CLASS'],'PKT KS: Group 2 signal 2 — call from subscriber','fwd');
+  setSig('sfwd','G2-2 sub','f');playTones(MF_FWD['CLASS'],0.17,AC.currentTime,Sms(SIG)/1000,0.007,0.008);
+  await sleep(SIG+GAP);if(stopFlag)return;
+  const bF=MFCK_BWD[isIdle?'B1':'B2'];
+  trace('← BWD',bF,`ARK-M KMR: ${isIdle?'B1 subscriber idle':'B2 subscriber busy'}`,'k');
+  setSig('sbwd',isIdle?'B1 idle':'B2 busy','b');playTones(bF,0.14,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+  await sleep(ACK+GAP);if(stopFlag)return;
+  if(!isIdle)return;
+  trace('FWD →',MF_FWD['G7_12'],'PKT KS: Group 7 signal 12 — local connection confirmed','fwd');
+  setSig('sfwd','G7-12 local','f');playTones(MF_FWD['G7_12'],0.16,AC.currentTime,Sms(SIG)/1000,0.007,0.008);
+  startScope(MF_FWD['G7_12']);await sleep(SIG+GAP);if(stopFlag)return;
+  trace('← BWD',MFCK_BWD['U4'],'ARK-M KMR: U4 — end of signalling','k');
+  setSig('sbwd','U4 end sig','b');playTones(MFCK_BWD['U4'],0.14,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+  await sleep(ACK+GAP);if(stopFlag)return;
+  trace('SYS',[],'junction disconnects — ARK-M switches call locally via SNR','sys');
+}
+async function runArkMNonLocal(){
+  if(stopFlag)return;
+  trace('SYS',[],'ARK-M KMR: non-local — signalling U5 to parent','sys');
+  trace('← BWD',MFCK_BWD['U5'],'ARK-M KMR: U5 — connect via parent; send Group 7','k');
+  setSig('sbwd','U5 via parent','b');playTones(MFCK_BWD['U5'],0.14,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+  await sleep(ACK+GAP);if(stopFlag)return;
+  trace('FWD →',MF_FWD['G7_11'],'PKT KS: Group 7 signal 11 — external connection','fwd');
+  setSig('sfwd','G7-11 ext','f');playTones(MF_FWD['G7_11'],0.16,AC.currentTime,Sms(SIG)/1000,0.007,0.008);
+  startScope(MF_FWD['G7_11']);await sleep(SIG+GAP);if(stopFlag)return;
+  trace('← BWD',MFCK_BWD['U4'],'ARK-M KMR: U4 — end of signalling; FUR prepared for junction call','k');
+  setSig('sbwd','U4 end sig','b');playTones(MFCK_BWD['U4'],0.14,AC.currentTime,Sms(ACK)/1000,0.007,0.008);
+  await sleep(ACK+GAP);if(stopFlag)return;
+  trace('SYS',[],'ARK-M complete — PKT GV stage called for onward routing','sys');setSig('sfwd','','');setSig('sbwd','','');
+}
+
+// ─────────────────────────────────────────────────────
+// STEP EXCHANGE SELECTOR STAGES
+// ─────────────────────────────────────────────────────
+async function stepGroupSel(digit,name,vol=0.38){
+  if(stopFlag)return;const n=digit==='0'?10:parseInt(digit);
+  trace('STEP',[],`${name} — digit ${digit} (${n} pulse${n>1?'s':''})`,'step');setSig('sfwd',`${name} [${digit}]`,'s');
+  let t=AC.currentTime;for(let i=0;i<n;i++){playTones([60],0.03,t,0.066,0.003,0.003);strowgerClick(t+0.002,vol);t+=0.1;}
+  startScope([800]);await sleep(n*100+60);if(stopFlag)return;
+  const hs=2+Math.floor(Math.random()*3);trace('STEP',[],'hunting...','step');strowgerHunt(AC.currentTime,hs,vol*0.48);await sleep(hs*38+60);
+}
+async function stepDSR(digit,ctx,label='DSR'){
+  if(stopFlag)return;const n=digit==='0'?10:parseInt(digit);
+  trace(label,[],`${label} — digit ${digit} (${n} pulses) — ${ctx}`,'dsr');setSig('sfwd',`${label} [${digit}]`,'s');
+  let t=AC.currentTime;for(let i=0;i<n;i++){playTones([60],0.03,t,0.066,0.003,0.003);dsrClick(t+0.002);t+=0.1;}
+  startScope([900]);await sleep(n*100+60);if(stopFlag)return;
+  noiseBurst(AC.currentTime,0.06,1200,'bandpass',1.0,0.12,0.015);await sleep(140);
+}
+async function stepFinalSel(td,ud){
+  // When ud is null, only do the tens stage (used by runStepTerm for interleaving)
+  if(stopFlag)return;const nt=td==='0'?10:parseInt(td);
+  trace('FINAL',[],`final selector — tens ${td} (${nt} pulses)`,'fin');setSig('sfwd',`Final tens [${td}]`,'s');
+  let t=AC.currentTime;for(let i=0;i<nt;i++){playTones([60],0.025,t,0.066,0.003,0.003);finalClick(t+0.002,0.24);t+=0.1;}
+  startScope([700]);await sleep(nt*100+50);if(stopFlag)return;
+  if(ud===null)return;  // tens only — caller will do units separately
+  const nu=ud==='0'?10:parseInt(ud);
+  trace('FINAL',[],`final selector — units ${ud} (${nu} pulses) → line seizure`,'fin');setSig('sfwd',`Final units [${ud}]`,'s');
+  t=AC.currentTime;for(let i=0;i<nu;i++){playTones([60],0.02,t,0.066,0.003,0.003);finalClick(t+0.002,0.16);t+=0.1;}
+  startScope([650]);await sleep(nu*100+40);if(stopFlag)return;
+  noiseBurst(AC.currentTime,0.025,900,'bandpass',1.0,0.22,0.008);
+  trace('FINAL',[],'line seized','fin');setSig('sfwd','line seized','s');await sleep(80);
+}
+async function stepFinalSelUnits(ud){
+  // Units stage only — called after junction pulse for units digit in runStepTerm
+  if(stopFlag)return;const nu=ud==='0'?10:parseInt(ud);
+  trace('FINAL',[],`final selector — units ${ud} (${nu} pulses) → line seizure`,'fin');setSig('sfwd',`Final units [${ud}]`,'s');
+  let t=AC.currentTime;for(let i=0;i<nu;i++){playTones([60],0.02,t,0.066,0.003,0.003);finalClick(t+0.002,0.16);t+=0.1;}
+  startScope([650]);await sleep(nu*100+40);if(stopFlag)return;
+  noiseBurst(AC.currentTime,0.025,900,'bandpass',1.0,0.22,0.008);
+  trace('FINAL',[],'line seized','fin');setSig('sfwd','line seized','s');await sleep(80);
+}
+async function stepJctPulse(digit,label){
+  if(stopFlag)return;const n=digit==='0'?10:parseInt(digit);
+  trace('JCT',[],`junction decadic — ${label} digit ${digit} (${n} pulses)`,'jct');setSig('sfwd',`JCT [${digit}]`,'s');
+  let t=AC.currentTime;for(let i=0;i<n;i++){playTones([2100],0.05,t,0.066,0.003,0.003);junctionClick(t+0.003,0.20);t+=0.1;}
+  startScope([2100]);await sleep(n*100+55);
+}
+async function runStepLocal(digits,code){
+  const ex=EXCHANGES[code];if(!ex)return;
+  if(ex.hasDSR){await stepDSR(digits[0],'local');if(stopFlag)return;await stepGroupSel(digits[1],'1st Group');if(stopFlag)return;await stepFinalSel(digits[2]||'0',digits[3]||'0');}
+  else{for(let i=0;i<5;i++){await stepGroupSel(digits[i]||'0',ex.localStages[i]);if(stopFlag)return;}await stepFinalSel(digits[5]||'0',digits[6]||'0');}
+}
+
+// runStepOrig: Step exchange originates a call, routing junction digits to PKT.
+// After this, PKT REG-I takes over via runStepRegI().
+async function runStepOrig(digits,code){
+  const ex=EXCHANGES[code];if(!ex)return;
+  if(ex.hasDSR){
+    // COR: DSR on digit[0], 1st Group on digit[1], then junction to PKT for remaining
+    await stepDSR(digits[0],'outgoing — DSR selects junction group');if(stopFlag)return;
+    await stepGroupSel(digits[1],'1st Group — selects PKT junction');if(stopFlag)return;
+    trace('SYS',[],'DSR+1st Group seized junction to PKT — outpulsing remaining digits','sys');
+    for(let i=2;i<digits.length;i++){await stepJctPulse(digits[i],`jct d${i+1}`);if(stopFlag)return;}
+  }else{
+    // MRW: 1st+2nd Group select junction, then remaining digits outpulsed
+    await stepGroupSel(digits[0],'1st Group');if(stopFlag)return;
+    await stepGroupSel(digits[1],'2nd Group — selects PKT junction');if(stopFlag)return;
+    trace('SYS',[],'1st+2nd Group seized junction to PKT — outpulsing remaining digits','sys');
+    for(let i=2;i<digits.length;i++){await stepJctPulse(digits[i],`jct d${i+1}`);if(stopFlag)return;}
+  }
+}
+
+// runStepTerm: PKT terminates to a Step exchange via decadic outpulsing on junction.
+// PKT strips pktStrip digits (3), outpulses 4 digits on the junction.
+// Each junction pulse is immediately followed by the corresponding selector stage
+// stepping on those same pulses — they are the same pulses on the same wire.
+async function runStepTerm(allDigits,code){
+  const ex=EXCHANGES[code];if(!ex)return;
+  const jd=allDigits.slice(ex.pktStrip);
+  trace('SYS',[],`PKT: strips ${ex.pktStrip} digits — outpulses ${jd.length} decadic on junction to ${code}`,'sys');
+  if(ex.hasDSR){
+    // COR: digit 1 → DSR, digit 2 → 1st Group, digits 3+4 → Final (tens then units)
+    await stepJctPulse(jd[0],'PKT→'+code+' d1');if(stopFlag)return;
+    await stepDSR(jd[0],'incoming from PKT junction','4th Sel');if(stopFlag)return;
+    await stepJctPulse(jd[1],'PKT→'+code+' d2');if(stopFlag)return;
+    await stepGroupSel(jd[1],'1st Group (incoming)');if(stopFlag)return;
+    await stepJctPulse(jd[2],'PKT→'+code+' tens');if(stopFlag)return;
+    await stepFinalSel(jd[2], null);if(stopFlag)return;   // tens only
+    await stepJctPulse(jd[3],'PKT→'+code+' units');if(stopFlag)return;
+    await stepFinalSelUnits(jd[3]);                        // units → line seized
+  }else{
+    // MRW: digit 1 → 4th Group, digit 2 → 5th Group, digits 3+4 → Final (tens then units)
+    await stepJctPulse(jd[0],'PKT→'+code+' d1');if(stopFlag)return;
+    await stepGroupSel(jd[0],'4th Group (incoming)');if(stopFlag)return;
+    await stepJctPulse(jd[1],'PKT→'+code+' d2');if(stopFlag)return;
+    await stepGroupSel(jd[1],'5th Group (incoming)');if(stopFlag)return;
+    await stepJctPulse(jd[2],'PKT→'+code+' tens');if(stopFlag)return;
+    await stepFinalSel(jd[2], null);if(stopFlag)return;   // tens only
+    await stepJctPulse(jd[3],'PKT→'+code+' units');if(stopFlag)return;
+    await stepFinalSelUnits(jd[3]);                        // units → line seized
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// SUBSCRIBER DECADIC
+// ─────────────────────────────────────────────────────
+async function runDecadicSub(digits,label){
+  trace('SYS',[],`${label}: receiving decadic pulses from subscriber`,'sys');
+  for(const d of digits){
+    if(stopFlag)return;const n=d==='0'?10:parseInt(d);
+    trace('SUB',[],`digit ${d} (${n} pulse${n>1?'s':''})`,'fwd');setSig('sfwd',`pulse ${d}`,'s');
+    let t=AC.currentTime;for(let i=0;i<n;i++){playTones([2100],0.06,t,0.066,0.003,0.003);reedClick(t+0.003,0.13);t+=0.1;}
+    startScope([2100]);await sleep(n*100+65);if(stopFlag)return;reedClick(AC.currentTime+0.01,0.07);await sleep(50);
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// CIRCUIT MANAGEMENT
+// ─────────────────────────────────────────────────────
+function checkCong(path){
+  for(let i=0;i<path.length-1;i++){const r=getRoute(path[i],path[i+1]);if(r&&r.used>=r.circuits)return{cong:true,seg:`${path[i]}→${path[i+1]}`};}
+  return{cong:false};
+}
+function seize(path){const s=[];for(let i=0;i<path.length-1;i++){const r=getRoute(path[i],path[i+1]);if(r){r.used++;s.push(r);}}return s;}
+function release(s){s.forEach(r=>{if(r.used>0)r.used--;});updateStatusTab();}
+
+// ═══════════════════════════════════════════════════════
+// MAIN CALL SEQUENCE
+// ═══════════════════════════════════════════════════════
+async function startCall(){
+  resumeAC();
+  fromCode=document.getElementById('fromExch').value;
+  const rawDial=document.getElementById('dialDigits').textContent.replace(/\D/g,'');
+  if(!fromCode){alert('Select an originating exchange');return;}
+  if(rawDial.length<7){alert('Enter at least 7 digits');return;}
+  toDigits=rawDial;toCode=exchForNumber(toDigits);
+  if(!toCode){trace('SYS',[],'unallocated number — no exchange for this prefix','err');return;}
+
+  const fromEx=EXCHANGES[fromCode],toEx=EXCHANGES[toCode];
+  const path=buildPath(fromCode,toCode);
+  const digits=toDigits.split('');
+  const isSame=(fromCode===toCode);
+  const destIsStep=(toEx.type==='Step');
+  const fromIsStep=(fromEx.type==='Step');
+  const viaTandem=(path.length===3&&path[1]==='PKT');
+  const bCode=Math.random()<0.08?'1B2':'1B1';
+  const isBusy=(bCode==='1B2');
+  const congRoll=Math.random()<0.04;
+
+  callActive=true;stopFlag=false;callStart=Date.now();sigCount=0;traceTotal=0;
+  clearTrace();
+  document.getElementById('callBtn').disabled=true;document.getElementById('hangBtn').disabled=false;
+  setDot('callerDot','g');setDot('traceDot','a');setDot('sigDot','a');
+  setSig('sstate','setting up','');setSig('sroute',path.join('→'),'');
+  showTab('call');
+
+  trace('SYS',[],`${fromEx.name} [${fromCode}/${fromEx.type}] → ${toEx.name} [${toCode}/${toEx.type}]`,'sys');
+  trace('SYS',[],`path: ${path.join(' → ')}  ${isSame?'(local)':'(inter-exchange)'}  outcome: ${isBusy?'busy':'answered'}`,'sys');
+
+  // ── Phase 1: Off-hook ─────────────────────────────────────────
+  if(fromEx.type==='ARK-D'){await runArkDOffhook();if(stopFlag){endCall('aborted');return;}}
+  else if(fromEx.type==='ARK-M'){await runArkMOffhook();if(stopFlag){endCall('aborted');return;}}
+
+  // ── Phase 2: Dial tone ────────────────────────────────────────
+  setSig('sstate','dial tone','');
+  if(fromEx.type==='ARK-D'){
+    trace('TONE',[],'PKT provides dial tone to ARK-D subscriber via seized circuit','tone');
+    startScope([400]);playDialTone('ARF',Sms(1500)/1000);
+  }else if(fromEx.type==='ARK-M'){
+    trace('TONE',[],'PKT provides 400+450 Hz dial tone to ARK-M subscriber','tone');
+    startScope([400,450]);playDialTone('ARK-M',Sms(1500)/1000);
+  }else{
+    trace('TONE',[],`${fromEx.type} dial tone`,'tone');
+    startScope([400]);playDialTone(fromEx.type,Sms(1500)/1000);
+  }
+  await sleep(1500);if(stopFlag){endCall('aborted');return;}
+  stopAll();stopScope();
+
+  // ── Phase 3: Subscriber dialling ─────────────────────────────
+  setSig('sstate','dialling','');
+  if(fromEx.type==='ARK-D'){
+    trace('SYS',[],'ARK-D: decadic pulses travel via seized circuit to PKT Reg.ELP','sys');
+    await runDecadicSub(digits,'PKT Reg.ELP (via ARK-D)');
+  }else if(fromEx.type==='ARK-M'){
+    trace('SYS',[],'ARK-M: FUR repeats decadic pulses to PKT Reg.ELP','sys');
+    await runDecadicSub(digits,'PKT Reg.ELP (via ARK-M FUR)');
+  }else if(fromIsStep){
+    if(isSame){
+      trace('SYS',[],'Step local call — all digits consumed internally','sys');
+      await runStepLocal(digits,fromCode);
+    }else{
+      await runStepOrig(digits,fromCode);
+    }
+  }else{
+    await runDecadicSub(digits,fromCode+' register');
+  }
+  if(stopFlag){endCall('aborted');return;}
+  stopAll();stopScope();setSig('sfwd','','');setSig('sbwd','','');
+
+  // ── Phase 4: Analysis / routing decision ─────────────────────
+  if(fromEx.type==='ARK-D'){
+    if(isSame){
+      trace('SYS',[],'PKT: local ARK-D prefix detected — drops out; ARK-D SL switches on last 4 digits','sys');
+      await sleep(150);if(stopFlag){endCall('aborted');return;}
+      await arkdLocalSL(digits.slice(3),fromCode);if(stopFlag){endCall('aborted');return;}
+    }else{
+      // PKT Reg.ELP acts as REG-I for ARK-D: decadic store → MFC-M origination
+      trace('SYS',[],'PKT: non-local ARK-D prefix — Reg.ELP acts as REG-I, converting to MFC-M','sys');
+      trace('REG-I',[],'PKT Reg.ELP (REG-I mode): digit store complete — seizing GV code sender','regi');
+      await markerDelay('PKT Reg.ELP → GV');
+      if(stopFlag){endCall('aborted');return;}
+    }
+  }else if(fromEx.type==='ARK-M'){
+    if(isSame){
+      trace('SYS',[],'PKT: local ARK-M subscriber — MFC-K signalling back to KMR','sys');
+      await sleep(120);if(stopFlag){endCall('aborted');return;}
+      await runArkMLocal(digits,bCode);if(stopFlag){endCall('aborted');return;}
+      if(isBusy){trace('SYS',[],'B2 — subscriber busy','err');setSig('sstate','busy','');playBusy(5);startScope([425]);await sleep(3750);stopAll();stopScope();endCall('busy');return;}
+    }else{
+      trace('SYS',[],'PKT: non-local ARK-M — MFC-K handoff sequence','sys');
+      await runArkMNonLocal();if(stopFlag){endCall('aborted');return;}
+    }
+  }else if(fromIsStep&&!isSame){
+    // Step exchange non-local: junction decadic received at PKT — REG-I handles it
+    // (runStepRegI called in Phase 6 below)
+  }else if(!isSame&&!fromIsStep){
+    if(fromEx.marker) await markerDelay(fromCode+' register');
+    trace('SYS',[],'register analysis complete — code sender seized','sys');
+    await sleep(110);if(stopFlag){endCall('aborted');return;}
+  }
+
+  // ── Phase 5: Congestion ───────────────────────────────────────
+  if(!isSame){
+    const cong=checkCong(path);
+    if(cong.cong||congRoll){
+      const seg=cong.cong?cong.seg:'random';
+      trace('ERR',[],'all circuits busy: '+seg,'err');setSig('sstate','congestion','');
+      playCongestion(4);startScope([425]);await sleep(3200);stopAll();stopScope();endCall('congestion',seg);return;
+    }
+    const seized=seize(path);setTimeout(()=>{release(seized);},Sms(18000));
+  }
+
+  // ── Phase 6: MFC-M signalling ─────────────────────────────────
+  setSig('sstate','signalling','');
+
+  if(isSame&&fromIsStep){
+    // Step local — already done in Phase 3
+  }else if(fromIsStep&&!isSame){
+    // ── ITEM 4: Step non-local → PKT REG-I → MFC-M onward ──────
+    // runStepOrig already fired in Phase 3.  Now PKT REG-I converts.
+    await runStepRegI(digits, fromCode, bCode, toCode, destIsStep);
+    if(stopFlag){endCall('aborted');return;}
+    // xbarSwitchIncoming already called inside runStepRegI for ARF destinations.
+    // For Step→Step, runStepTerm handles the terminal side there too.
+  }else if(fromEx.type==='ARK-D'&&isSame){
+    // Already handled (arkdLocalSL) — nothing more
+  }else if(fromEx.type==='ARK-M'&&isSame){
+    // Already handled (runArkMLocal) — nothing more
+  }else if(!isSame){
+    // ── Standard ARF / ARK-D non-local / ARK-M non-local ────────
+    const origLabel=
+      fromEx.type==='ARK-D'?'PKT Reg.ELP (REG-I/ARK-D)':
+      fromEx.type==='ARK-M'?'PKT(via ARK-M)':
+      `${fromCode}(${fromEx.type})`;
+
+    if(toEx.type==='ARK-D'){
+      // ARK-D termination: GV signals 1A9 after digit 2, register re-applies,
+      // GV returns 3A4, then PKT outpulses all 7 digits decadically to PKM Reg-D.
+      trace('SYS',[],`${toCode} is ARK-D (ARK511-D) — GV will signal 1A9+3A4; PKT outpulses all digits to ${toCode} Reg-D`,'sys');
+      await mfStream(origLabel,digits,fromEx.register||'Reg-LP',bCode,false,viaTandem,toCode,true);
+      if(stopFlag){endCall('aborted');return;}
+      await runArkDTerm(digits,toCode);if(stopFlag){endCall('aborted');return;}
+    }else if(destIsStep){
+      // Step destination: MFC-M runs to 3A4 at GV, then PKT outpulses decadic on Step junction
+      trace('SYS',[],`${toCode} is Step — MFC-M terminates at 3A4; PKT outpulses decadic on ${toCode} junction`,'sys');
+      await mfStream(origLabel,digits,fromEx.register||'Reg-LP','1B1',false,viaTandem,toCode,false,true);
+      if(stopFlag){endCall('aborted');return;}
+      await runStepTerm(digits,toCode);if(stopFlag){endCall('aborted');return;}
+    }else{
+      // Standard ARF destination: full MFC-M stream + xbar switching
+      await mfStream(origLabel,digits,fromEx.register||'Reg-LP',bCode,false,viaTandem,toCode);
+      if(stopFlag){endCall('aborted');return;}
+      await xbarSwitchIncoming(digits.slice(3),toCode);
+      if(stopFlag){endCall('aborted');return;}
+    }
+  }else if(isSame&&!fromIsStep&&fromEx.type!=='ARK-D'&&fromEx.type!=='ARK-M'){
+    // Local ARF call
+    await mfStream(fromCode+'(local)',digits,fromEx.register||'Reg-LP',bCode,true,false,fromCode);
+    if(stopFlag){endCall('aborted');return;}
+    await xbarSwitchLocal(digits,fromCode);if(stopFlag){endCall('aborted');return;}
+  }
+
+  stopAll();stopScope();setSig('sfwd','','');setSig('sbwd','','');
+
+  // ── Phase 7: Busy ─────────────────────────────────────────────
+  if(isBusy&&fromEx.type!=='ARK-M'&&!fromIsStep){
+    trace('SYS',[],'1B2 — subscriber busy','err');setSig('sstate','busy','');
+    playBusy(5);startScope([425]);await sleep(3750);stopAll();stopScope();endCall('busy');return;
+  }
+  // Step busy: handled via REG-I result — if bCode=1B2 from dest SL
+  if(isBusy&&fromIsStep&&!isSame){
+    trace('SYS',[],'1B2 — destination subscriber busy','err');setSig('sstate','busy','');
+    playBusy(5);startScope([425]);await sleep(3750);stopAll();stopScope();endCall('busy');return;
+  }
+
+  // ── Phase 8: Ringing ──────────────────────────────────────────
+  trace('TONE',[],'1B1 — subscriber idle; ringing  (Aus cadence 0.4s/0.2s/0.4s/2.0s)','tone');
+  setSig('sstate','ringing','');setDot('traceDot','g');setDot('sigDot','g');
+  playRingback(2);startScope([400]);
+  await sleep(500);if(stopFlag){stopAll();stopScope();endCall('aborted');return;}
+  await sleep(Sms(4600));if(stopFlag){stopAll();stopScope();endCall('aborted');return;}
+  stopAll();stopScope();
+
+  // ── Phase 9: Answer + 900 Hz TCAF ────────────────────────────
+  trace('ANS',[],'subscriber answers — 500ms pause','ans');setSig('sstate','answer','');
+  await sleep(500);if(stopFlag){endCall('aborted');return;}
+  trace('ANS',[900],'900 Hz — test call answer facility — 2 second burst','ans');
+  setSig('sfwd','900 Hz TCAF','f');
+  playTones([900],0.18,AC.currentTime,2.0,0.01,0.01);startScope([900]);
+  await sleep(2000);if(stopFlag){stopAll();stopScope();endCall('aborted');return;}
+  stopAll();stopScope();await sleep(400);
+  trace('SYS',[],'called party clears — normal release','sys');setSig('sstate','clear','');endCall('answered');
+}
+
+function endCall(result,detail){
+  const dur=((Date.now()-callStart)/1000).toFixed(1);
+  callHistory.unshift({time:new Date().toLocaleTimeString(),from:fromCode,to:toDigits,route:document.getElementById('sroute').textContent||'—',dur:dur+'s',result,detail:detail||''});
+  updateHistory();stopAll();stopScope();callActive=false;
+  document.getElementById('callBtn').disabled=false;document.getElementById('hangBtn').disabled=true;
+  setDot('callerDot','');setDot('traceDot','');setDot('sigDot','');setSig('sstate',result,'');updateStatusTab();
+}
+function hangUp(){if(!callActive)return;stopFlag=true;trace('SYS',[],'call cleared by user','sys');}
+
+// ═══════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════
+function showTab(id){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  const idx={map:0,call:1,status:2,history:3}[id]||0;
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if(id==='status')updateStatusTab();if(id==='history')updateHistory();
+}
+function buildDialPad(){
+  const pad=document.getElementById('dialPad');pad.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','*','0','#'].forEach(k=>{
+    const b=document.createElement('button');b.className='dkey';b.textContent=k;b.onclick=()=>dialKey(k);pad.appendChild(b);
+  });
+}
+function dialKey(k){if(callActive)return;const el=document.getElementById('dialDigits');if(el.textContent.length<12)el.textContent+=k;}
+function clearDial(){if(!callActive)document.getElementById('dialDigits').textContent='';}
+document.addEventListener('keydown',e=>{
+  if(callActive||e.target.tagName==='SELECT')return;
+  if(e.key>='0'&&e.key<='9')dialKey(e.key);
+  if(e.key==='Backspace'){e.preventDefault();const el=document.getElementById('dialDigits');el.textContent=el.textContent.slice(0,-1);}
+  if(e.key==='Enter'&&!document.getElementById('callBtn').disabled)startCall();
+});
+function populateSelects(){
+  ['fromExch','toExch'].forEach(id=>{
+    const sel=document.getElementById(id);
+    Object.entries(EXCHANGES).forEach(([code,ex])=>{
+      if(!ex.prefixes.length)return;
+      const o=document.createElement('option');o.value=code;o.textContent=`${code} — ${ex.name} (${ex.type})`;sel.appendChild(o);
+    });
+  });
+}
+function onFromChange(){const c=document.getElementById('fromExch').value;const n=c?randomNum(c):'';document.getElementById('fromNum').textContent=n?`(074) ${n.slice(0,2)} ${n.slice(2)}`:'';} 
+function onToChange(){const c=document.getElementById('toExch').value;const n=c?randomNum(c):'';document.getElementById('toNum').textContent=n?`(074) ${n.slice(0,2)} ${n.slice(2)}`:'';if(n)document.getElementById('dialDigits').textContent=n;}
+function updateSpeed(){const v=parseFloat(document.getElementById('spd').value);speedMul=v;document.getElementById('spdLbl').textContent=v.toFixed(1)+'×';}
+
+function buildMap(){
+  const svg=document.getElementById('mapSvg');
+  const il=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  il.setAttribute('points','80,80 140,40 280,30 420,55 560,70 640,130 660,220 640,320 580,400 500,460 380,490 250,480 150,450 90,380 60,280 55,180');
+  il.setAttribute('fill','#0d1a1c');il.setAttribute('stroke','#1e3035');il.setAttribute('stroke-width','1.5');svg.appendChild(il);
+  const mkT=(x,y,txt,fill,sz,anch)=>{
+    const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('fill',fill);t.setAttribute('font-family','Share Tech Mono,monospace');t.setAttribute('font-size',sz);t.setAttribute('text-anchor',anch||'middle');t.textContent=txt;svg.appendChild(t);
+  };
+  mkT(350,507,'KARUMAI ISLAND  ·  TELECOM AUSTRALIA  ·  AREA (074)','#1e3540','9');mkT(28,478,'KARUMAI SEA','#162830','10','start');
+  ROUTES.forEach(r=>{
+    const a=EXCHANGES[r.a],b=EXCHANGES[r.b];if(!a||!b)return;
+    const isDirect=DIRECT_PAIRS.has(r.a+'-'+r.b)||DIRECT_PAIRS.has(r.b+'-'+r.a);
+    const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1',a.x);ln.setAttribute('y1',a.y);ln.setAttribute('x2',b.x);ln.setAttribute('y2',b.y);
+    ln.setAttribute('stroke',isDirect?'#1e4545':'#183030');ln.setAttribute('stroke-width',isDirect?'2':'1.5');
+    if(!isDirect)ln.setAttribute('stroke-dasharray','5 3');svg.appendChild(ln);
+    mkT((a.x+b.x)/2+3,(a.y+b.y)/2-4,r.circuits+'c','#253838','8');
+  });
+  Object.entries(EXCHANGES).forEach(([code,ex])=>{
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('transform',`translate(${ex.x},${ex.y})`);
+    if(ex.prefixes.length){g.style.cursor='pointer';g.addEventListener('click',()=>quickDial(code));}
+    const sh=document.createElementNS('http://www.w3.org/2000/svg','circle');sh.setAttribute('r','17');sh.setAttribute('fill','#050a0b');sh.setAttribute('opacity','0.55');g.appendChild(sh);
+    const isTandem=!ex.prefixes.length;let shape;
+    if(isTandem){shape=document.createElementNS('http://www.w3.org/2000/svg','rect');shape.setAttribute('x','-12');shape.setAttribute('y','-12');shape.setAttribute('width','24');shape.setAttribute('height','24');shape.setAttribute('rx','2');}
+    else{shape=document.createElementNS('http://www.w3.org/2000/svg','circle');shape.setAttribute('r','13');}
+    shape.setAttribute('fill','#111619');shape.setAttribute('stroke',ex.color);shape.setAttribute('stroke-width','1.5');g.appendChild(shape);
+    const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');lbl.setAttribute('text-anchor','middle');lbl.setAttribute('dominant-baseline','central');lbl.setAttribute('fill',ex.color);lbl.setAttribute('font-family','Share Tech Mono,monospace');lbl.setAttribute('font-size','8');lbl.setAttribute('font-weight','bold');lbl.textContent=code;g.appendChild(lbl);
+    const tl=document.createElementNS('http://www.w3.org/2000/svg','text');tl.setAttribute('text-anchor','middle');tl.setAttribute('y','23');tl.setAttribute('fill','#4a7070');tl.setAttribute('font-family','Share Tech Mono,monospace');tl.setAttribute('font-size','7');tl.textContent=ex.type;g.appendChild(tl);
+    const nl=document.createElementNS('http://www.w3.org/2000/svg','text');nl.setAttribute('text-anchor','middle');nl.setAttribute('y','-21');nl.setAttribute('fill','#3a6060');nl.setAttribute('font-family','Share Tech Mono,monospace');nl.setAttribute('font-size','7');nl.textContent=ex.town;g.appendChild(nl);
+    if(ex.prefixes.length){
+      const rl=document.createElementNS('http://www.w3.org/2000/svg','text');
+      rl.setAttribute('text-anchor','middle');rl.setAttribute('y','33');
+      rl.setAttribute('fill',ex.color);rl.setAttribute('opacity','0.55');
+      rl.setAttribute('font-family','Share Tech Mono,monospace');rl.setAttribute('font-size','6.5');
+      // Show as "21-23" if contiguous range, else "24 25" separated
+      const pfx=ex.prefixes;
+      const rangeStr=pfx.length===1?pfx[0]+'XXXXX':pfx[0]+'-'+pfx[pfx.length-1]+' XXXXX';
+      rl.textContent='(074) '+rangeStr;
+      g.appendChild(rl);
+    }
+    svg.appendChild(g);
+  });
+}
+function quickDial(code){
+  document.getElementById('fromExch').value=code;onFromChange();
+  const others=Object.keys(EXCHANGES).filter(k=>k!==code&&EXCHANGES[k].prefixes.length);
+  const dest=others[Math.floor(Math.random()*others.length)];
+  document.getElementById('toExch').value=dest;onToChange();showTab('call');
+}
+function updateStatusTab(){
+  const grid=document.getElementById('exchGrid');grid.innerHTML='';
+  Object.entries(EXCHANGES).forEach(([code,ex])=>{
+    const card=document.createElement('div');card.className='exch-card';
+    const head=document.createElement('div');head.className='ec-head';
+    const dot=document.createElement('span');dot.className='dot';dot.style.background=ex.color;dot.style.boxShadow='none';
+    const codeEl=document.createElement('span');codeEl.className='ec-code';codeEl.textContent=code;codeEl.style.color=ex.color;
+    const nameEl=document.createElement('span');nameEl.className='ec-name';nameEl.textContent=ex.name;
+    head.appendChild(dot);head.appendChild(codeEl);head.appendChild(nameEl);
+    let typeStr=`${ex.type} · ${ex.register||'-'} · ${ex.subLoop}`;
+    if(ex.lines)typeStr+=` · ${ex.lines} lines`;if(ex.hasDSR)typeStr+=' · DSR';if(ex.marker)typeStr+=' · common ctrl';
+    const typeEl=document.createElement('div');typeEl.className='ec-type';typeEl.textContent=typeStr;
+    card.appendChild(head);card.appendChild(typeEl);
+    ROUTES.filter(r=>r.a===code||r.b===code).forEach(r=>{
+      const other=r.a===code?r.b:r.a;const pct=r.circuits>0?r.used/r.circuits:0;
+      const row=document.createElement('div');row.className='route-row';
+      const barW=document.createElement('div');barW.className='cct-bar';
+      const fill=document.createElement('div');fill.className='cct-fill';
+      fill.style.width=(pct*100)+'%';fill.style.background=pct>0.8?'var(--red)':pct>0.5?'var(--amber)':'var(--green)';
+      barW.appendChild(fill);row.innerHTML=`<span>→${other}</span>`;row.appendChild(barW);
+      row.innerHTML+=`<span>${r.used}/${r.circuits}</span>`;row.insertBefore(barW,row.lastChild);card.appendChild(row);
+    });
+    if(ex.prefixes.length){const p=document.createElement('div');p.style.cssText='font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:5px';p.textContent='(074) '+ex.prefixes.join(' / ')+' XXXXX';card.appendChild(p);}
+    grid.appendChild(card);
+  });
+}
+function updateHistory(){
+  const list=document.getElementById('historyList');const empty=document.getElementById('histEmpty');
+  list.innerHTML='';
+  if(!callHistory.length){empty.style.display='';return;}
+  empty.style.display='none';
+  callHistory.slice(0,60).forEach(h=>{
+    const row=document.createElement('div');row.className='hist-row';
+    const cls=h.result==='answered'?'hr-ans':h.result==='busy'?'hr-busy':h.result==='aborted'?'hr-abort':'hr-cong';
+    row.innerHTML=`<span style="color:var(--text2)">${h.time}</span><span style="color:var(--green)">${h.from}</span><span style="color:var(--text)">(074) ${h.to.slice(0,2)} ${h.to.slice(2)}</span><span style="color:var(--text3)">${h.route}</span><span style="color:var(--text2)">${h.dur}</span><span class="hist-result ${cls}">${h.result}${h.detail?' ('+h.detail+')':''}</span>`;
+    list.appendChild(row);
+  });
+}
+buildDialPad();buildFreqStrip();populateSelects();buildMap();updateStatusTab();drawScope();
+</script>
+</body>
+</html>
