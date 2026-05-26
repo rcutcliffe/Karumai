@@ -1,6 +1,6 @@
 # Karumai Island Telephone Network Simulator
 
-First things:  This application has been written im most part by CLAUDE with encouragement and much comment from me.
+First things:  This application has been written in most part by CLAUDE with encouragement and much comment from me.
 
 A single-file HTML/JavaScript simulator of a fictional island PSTN, accurate to Australian Post Office / Telecom Australia engineering practice of the 1960s–1980s. It plays real audio through the Web Audio API and shows a detailed trace of every signal exchanged between exchanges.
 
